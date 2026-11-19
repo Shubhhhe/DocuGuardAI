@@ -1,5 +1,5 @@
 # Demo Project
 
-MAX_USERS: 100
+MAX_USERS: 200
 
 PORT: 5000
