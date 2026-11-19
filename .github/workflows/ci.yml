@@ -31,6 +31,9 @@ jobs:
       - name: Check sample documentation
         run: python check_docs.py
 
+      - name: Run historical documentation replay
+        run: python historical_replay.py
+
       - name: Check changed Python settings against documentation
         run: python git_diff_check.py --base origin/main
         if: github.event_name == 'pull_request'
