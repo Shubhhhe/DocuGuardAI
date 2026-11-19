@@ -77,7 +77,9 @@ def main():
     report = analyze_changed_constants(
         old_code,
         new_code,
-        docs
+        docs,
+        code_file=args.code,
+        docs_file=args.docs,
     )
 
     print("\nDOCUGUARD GIT DIFF CHECK")
@@ -99,10 +101,22 @@ def main():
         print("Status:", item["status"])
         print("Old value:", item["old_value"])
         print("New value:", item["code_value"])
-        print("Documentation:", item["doc_sentence"])
+
+        if item["old_code_line"] is not None:
+            old_location = f"{args.code}:{item['old_code_line']}"
+            print("Previous code reference:", old_location)
+            print("Previous code line:", item["old_code_line_text"])
+
+        if item["code_line"] is not None:
+            code_location = f"{args.code}:{item['code_line']}"
+            print("Current code reference:", code_location)
+            print("Current code line:", item["code_line_text"])
 
         if item["doc_line"] is not None:
-            print("Documentation line:", item["doc_line"])
+            print("Documentation reference:", f"{args.docs}:{item['doc_line']}")
+            print("Documentation sentence:", item["doc_sentence"])
+        else:
+            print("Documentation reference:", f"{args.docs} (no matching line)")
 
         print("Suggestion:", item["suggestion"])
 
