@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DocuGuard AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="shield">◆</span> DocuGuard <span class="ai">AI</span></div>
+    <span class="tag">Documentation consistency checker</span>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <p class="eyebrow">OPEN-SOURCE MAINTAINER TOOL</p>
+      <h1>Keep your documentation<br><span>in sync with your code.</span></h1>
+      <p class="sub">Upload a Python configuration file and its README. DocuGuard checks simple documented settings against the current code.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Analyze your project</h2>
+      <p class="muted">Choose one .py file and one README or .txt documentation file.</p>
+      <form method="POST" enctype="multipart/form-data">
+        <div class="upload-grid">
+          <label class="upload-box">
+            <span class="file-icon">PY</span>
+            <strong>Python source file</strong>
+            <small>Choose a .py file</small>
+            <input type="file" name="code_file" accept=".py" required>
+          </label>
+          <label class="upload-box">
+            <span class="file-icon doc">MD</span>
+            <strong>Documentation file</strong>
+            <small>Choose README.md or .txt</small>
+            <input type="file" name="readme_file" accept=".md,.txt" required>
+          </label>
+        </div>
+        <button type="submit" class="analyze">Analyze documentation →</button>
+      </form>
+      <p class="privacy">Files are processed by this local demo server and are not sent to an AI provider.</p>
+    </section>
+
+    {% if error %}
+      <div class="alert error">{{ error }}</div>
+    {% endif %}
+
+    {% if report %}
+      <section class="results">
+        <div class="result-heading">
+          <div><p class="eyebrow">ANALYSIS REPORT</p><h2>Results</h2></div>
+          <span class="complete">Analysis complete</span>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>{{ report.constants_found }}</strong><span>Constants found</span></div>
+          <div class="stat"><strong>{{ report.sentences_checked }}</strong><span>Documentation matches</span></div>
+          <div class="stat"><strong>{{ report.results|selectattr('status', 'equalto', 'mismatch')|list|length }}</strong><span>Potential mismatches</span></div>
+        </div>
+
+        {% if not report.results %}
+          <div class="alert">No documentation sentences mentioning the extracted constants were found.</div>
+        {% endif %}
+
+        {% for item in report.results %}
+          <article class="finding {{ item.status }}">
+            <div class="finding-top">
+              <strong>{{ item.name }}</strong>
+              {% if item.status == 'mismatch' %}
+                <span class="status bad">Potential mismatch</span>
+              {% elif item.status == 'match' %}
+                <span class="status good">Match</span>
+              {% else %}
+                <span class="status unsure">Needs review</span>
+              {% endif %}
+            </div>
+            <p><b>Code evidence:</b> line {{ item.code_line }}, current value <code>{{ item.code_value }}</code></p>
+            <p><b>Documentation sentence:</b> {{ item.doc_sentence }}</p>
+            <p><b>Documented value:</b> {{ item.doc_value }}</p>
+            <div class="suggestion"><b>Suggested action</b><p>{{ item.suggestion }}</p></div>
+          </article>
+        {% endfor %}
+        <p class="disclaimer">{{ report.note }}</p>
+      </section>
+    {% endif %}
+    <footer>DocuGuard AI · Hackathon prototype · Evidence-first documentation checking</footer>
+  </main>
+</body>
+</html>
