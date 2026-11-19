@@ -14,6 +14,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,5 +28,9 @@ jobs:
       - name: Run automated tests
         run: python -m unittest discover -s tests -v
 
-      - name: Check documentation consistency
+      - name: Check sample documentation
         run: python check_docs.py
+
+      - name: Check changed Python settings against documentation
+        run: python git_diff_check.py --base origin/main
+        if: github.event_name == 'pull_request'
