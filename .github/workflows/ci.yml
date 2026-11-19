@@ -34,3 +34,7 @@ jobs:
       - name: Check changed Python settings against documentation
         run: python git_diff_check.py --base origin/main
         if: github.event_name == 'pull_request'
+       
+      - name: Check all changed Python files
+        run: python dynamic_git_check.py --base origin/main
+        if: github.event_name == 'pull_request'
