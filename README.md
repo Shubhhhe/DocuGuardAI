@@ -25,6 +25,7 @@ If `python` is not recognized, try `py` instead.
 - README lines that explicitly mention the same setting name and a simple value
 - Reporting matching values, potential mismatches, and uncertain cases
 - Showing source line evidence and a suggested text correction
+- For changed settings, reporting the previous and current Python file lines and the matching documentation file and line
 
 ## Limitations
 

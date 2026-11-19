@@ -4,7 +4,42 @@ import re
 from analyzer import extract_constants, analyze_files
 
 
-def analyze_changed_constants(old_source, new_source, docs_text):
+def _source_line(source, line_number):
+    """Return a source line by its one-based line number, if it exists."""
+    if line_number is None:
+        return None
+
+    lines = source.splitlines()
+    if 1 <= line_number <= len(lines):
+        return lines[line_number - 1].strip()
+    return None
+
+
+def _doc_line_number(docs_text, sentence, start_at=0):
+    """Find the documentation line containing a sentence, preserving line refs."""
+    normalized_sentence = " ".join(sentence.split()).casefold()
+    lines = docs_text.splitlines()
+
+    for index in range(start_at, len(lines)):
+        normalized_line = " ".join(lines[index].split()).casefold()
+        if normalized_sentence and normalized_sentence in normalized_line:
+            return index + 1, index + 1
+
+    for index, line in enumerate(lines):
+        normalized_line = " ".join(line.split()).casefold()
+        if normalized_sentence and normalized_sentence in normalized_line:
+            return index + 1, max(start_at, index + 1)
+
+    return None, start_at
+
+
+def analyze_changed_constants(
+    old_source,
+    new_source,
+    docs_text,
+    code_file=None,
+    docs_file=None,
+):
     """
     Compare old and new Python source.
     Analyze only configuration constants that changed.
@@ -40,14 +75,8 @@ def analyze_changed_constants(old_source, new_source, docs_text):
 
         matching_lines = [
             (line_number, line.strip())
-            for line_number, line in enumerate(
-                docs_text.splitlines(), start=1
-            )
-            if re.search(
-                r"\b" + re.escape(name) + r"\b",
-                line,
-                re.IGNORECASE
-            )
+            for line_number, line in enumerate(docs_text.splitlines(), start=1)
+            if re.search(r"\b" + re.escape(name) + r"\b", line, re.IGNORECASE)
         ]
 
         # A removed setting should not remain in documentation.
@@ -58,6 +87,12 @@ def analyze_changed_constants(old_source, new_source, docs_text):
                     "change_type": change_type,
                     "old_value": old_value,
                     "code_value": None,
+                    "code_file": code_file,
+                    "old_code_line": old_info["line"],
+                    "old_code_line_text": _source_line(old_source, old_info["line"]),
+                    "code_line": None,
+                    "code_line_text": None,
+                    "doc_file": docs_file,
                     "doc_line": line_number,
                     "doc_sentence": line,
                     "status": "stale_reference",
@@ -76,6 +111,14 @@ def analyze_changed_constants(old_source, new_source, docs_text):
                 "change_type": change_type,
                 "old_value": old_value,
                 "code_value": new_value,
+                "code_file": code_file,
+                "old_code_line": old_info["line"] if old_info else None,
+                "old_code_line_text": (
+                    _source_line(old_source, old_info["line"]) if old_info else None
+                ),
+                "code_line": new_info["line"],
+                "code_line_text": _source_line(new_source, new_info["line"]),
+                "doc_file": docs_file,
                 "doc_line": None,
                 "doc_sentence": None,
                 "status": "missing_documentation",
@@ -92,14 +135,10 @@ def analyze_changed_constants(old_source, new_source, docs_text):
             if item["name"] == name
         ]
 
+        next_doc_line = 0
         for item in matching_results:
-            doc_line = next(
-                (
-                    line_number
-                    for line_number, line in matching_lines
-                    if line == item["doc_sentence"]
-                ),
-                None
+            doc_line, next_doc_line = _doc_line_number(
+                docs_text, item["doc_sentence"], next_doc_line
             )
 
             results.append({
@@ -107,6 +146,14 @@ def analyze_changed_constants(old_source, new_source, docs_text):
                 "change_type": change_type,
                 "old_value": old_value,
                 "code_value": new_value,
+                "code_file": code_file,
+                "old_code_line": old_info["line"] if old_info else None,
+                "old_code_line_text": (
+                    _source_line(old_source, old_info["line"]) if old_info else None
+                ),
+                "code_line": new_info["line"],
+                "code_line_text": _source_line(new_source, new_info["line"]),
+                "doc_file": docs_file,
                 "doc_line": doc_line,
                 "doc_sentence": item["doc_sentence"],
                 "status": item["status"],
